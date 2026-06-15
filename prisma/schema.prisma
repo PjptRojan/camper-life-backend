@@ -4,10 +4,89 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "postgresql" // Just keep the provider here!
+}
+
+enum TrekRegion {
+  Everest
+  Annapurna
+  Langtang
+  Manaslu
+  Mustang
+  Kanchenjunga
+}
+
+enum Difficulty {
+  Easy
+  Moderate
+  Challenging
+  Strenuous
+}
+
+enum Season {
+  Spring
+  Summer
+  Autumn
+  Winter
+}
+
+model Destination {
+  id                String     @id // Stable slug, e.g. "ebc", "abc"
+  name              String
+  region            TrekRegion
+  description       String
+  location          String
+  pricePerNight     Int // Base per-day price in USD
+  emoji             String
+  maxAltitudeMeters Int
+  difficulty        Difficulty
+  durationDaysMin   Int
+  durationDaysMax   Int
+  bestSeasons       Season[]
+  startPoint        String
+  permitsRequired   String[]
+  createdAt         DateTime   @default(now())
+
+  @@index([region])
+}
+
+model GearItem {
+  id        String   @id @default(uuid())
+  name      String
+  category  String // Cooking, Comfort, Tents
+  rentPrice Float
+  buyPrice  Float
+  createdAt DateTime @default(now())
+}
+
+model OnSiteService {
+  id        String   @id @default(uuid())
+  name      String
+  category  String // Staff, Experience
+  price     Float
+  createdAt DateTime @default(now())
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String // This will hold the hashed password string
+  name      String
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+}
+
+model Booking {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  destinationId String
+  totalPrice    Float
+  startDate     DateTime
+  endDate       DateTime
+  createdAt     DateTime @default(now())
 }

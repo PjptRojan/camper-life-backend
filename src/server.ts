@@ -1,41 +1,79 @@
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
+import { prisma } from './db.js'; // Import our live database client
+import { authRouter } from './auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors()); // Allows your React app to connect
-app.use(express.json()); // Allows the server to read JSON bodies in POST requests
+app.use(cors());
+app.use(express.json());
 
-// Hardcoded Mock Data for Learning/Testing
-const destinations = [
-  { id: '1', name: 'Whispering Pines Valley', type: 'Forest', basePrice: 120 },
-  { id: '2', name: 'Mirror Lake Oasis', type: 'Lakeside', basePrice: 150 },
-  { id: '3', name: 'Eagle Eye Peak', type: 'Mountain', basePrice: 180 }
-];
+// --- LIVE API Endpoints (Fetching from PostgreSQL) ---
 
-const gearItems = [
-  { id: '101', name: 'Premium 4-Person Tent', category: 'Tents & Bedding', rentPrice: 30, buyPrice: 200 },
-  { id: '102', name: 'Dual Burner Gas Stove', category: 'Cooking', rentPrice: 15, buyPrice: 80 },
-  { id: '103', name: 'Luxury Camp Chair', category: 'Comfort', rentPrice: 8, buyPrice: 45 }
-];
-
-// --- API Endpoints (Routes) ---
+// 2. Register the Auth Router endpoints
+app.use('/api/auth', authRouter);
 
 // 1. Test Route
 app.get('/', (req: Request, res: Response) => {
-  res.send('Camping-as-a-Service Backend is running! 🌲');
+  res.send('Camping-as-a-Service Backend is running with Postgres! 🌲');
 });
 
-// 2. Get All Destinations
-app.get('/api/destinations', (req: Request, res: Response) => {
-  res.json(destinations);
+// 2. Get All Destinations from Database (public catalog of Nepal treks)
+const TREK_REGIONS = ['Everest', 'Annapurna', 'Langtang', 'Manaslu', 'Mustang', 'Kanchenjunga'] as const;
+type TrekRegion = (typeof TREK_REGIONS)[number];
+
+// Fields exposed to the frontend — exactly the API contract shape (no createdAt).
+const DESTINATION_SELECT = {
+  id: true,
+  name: true,
+  region: true,
+  description: true,
+  location: true,
+  pricePerNight: true,
+  emoji: true,
+  maxAltitudeMeters: true,
+  difficulty: true,
+  durationDaysMin: true,
+  durationDaysMax: true,
+  bestSeasons: true,
+  startPoint: true,
+  permitsRequired: true,
+} as const;
+
+app.get('/api/destinations', async (req: Request, res: Response): Promise<any> => {
+  try {
+    // Optional ?region= filter (frontend currently filters client-side).
+    const region = req.query.region;
+    if (region !== undefined && !TREK_REGIONS.includes(region as TrekRegion)) {
+      return res.status(400).json({
+        message: `Invalid region "${region}". Expected one of: ${TREK_REGIONS.join(', ')}.`,
+      });
+    }
+
+    const destinations = await prisma.destination.findMany({
+      ...(region ? { where: { region: region as TrekRegion } } : {}),
+      orderBy: { name: 'asc' },
+      select: DESTINATION_SELECT,
+    });
+
+    res.json(destinations);
+  } catch (error) {
+    console.error('Error fetching destinations:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
-// 3. Get All Gear Items
-app.get('/api/gear', (req: Request, res: Response) => {
-  res.json(gearItems);
+// 3. Get All Gear Items from Database
+app.get('/api/gear', async (req: Request, res: Response) => {
+  try {
+    const gearItems = await prisma.gearItem.findMany();
+    res.json(gearItems);
+  } catch (error) {
+    console.error('Error fetching gear items:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Start Server

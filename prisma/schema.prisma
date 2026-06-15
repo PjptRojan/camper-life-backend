@@ -34,6 +34,11 @@ enum Season {
   Winter
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model Destination {
   id                String     @id // Stable slug, e.g. "ebc", "abc"
   name              String
@@ -55,20 +60,24 @@ model Destination {
 }
 
 model GearItem {
-  id        String   @id @default(uuid())
-  name      String
-  category  String // Cooking, Comfort, Tents
-  rentPrice Float
-  buyPrice  Float
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  name        String
+  category    String // Cooking, Comfort, Tents
+  description String   @default("") // Marketing copy shown on the product card
+  emoji       String   @default("") // Lightweight icon for the card
+  rentPrice   Float
+  buyPrice    Float
+  createdAt   DateTime @default(now())
 }
 
 model OnSiteService {
-  id        String   @id @default(uuid())
-  name      String
-  category  String // Staff, Experience
-  price     Float
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  name        String
+  category    String // Staff, Experience
+  description String   @default("") // Short explanation of the add-on
+  emoji       String   @default("") // Lightweight icon for the checklist row
+  price       Float
+  createdAt   DateTime @default(now())
 }
 
 model User {
@@ -76,6 +85,7 @@ model User {
   email     String    @unique
   password  String // This will hold the hashed password string
   name      String
+  role      Role      @default(USER) // USER by default; promote one user to ADMIN for the dashboard
   bookings  Booking[]
   createdAt DateTime  @default(now())
 }

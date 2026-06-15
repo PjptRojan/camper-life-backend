@@ -25,10 +25,10 @@ authRouter.post('/signup', async (req: Request, res: Response): Promise<any> => 
       data: { email, name, password: hashedPassword }
     });
 
-    // Generate a JWT Token
-    const token = jwt.sign({ userId: newUser.id }, JWT_SECRET, { expiresIn: '7d' });
+    // Generate a JWT Token (role is embedded so the auth middleware can gate admin routes)
+    const token = jwt.sign({ userId: newUser.id, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.status(201).json({ token, user: { id: newUser.id, email: newUser.email, name: newUser.name } });
+    res.status(201).json({ token, user: { id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role } });
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({ error: 'Internal server error during registration' });
@@ -52,10 +52,10 @@ authRouter.post('/login', async (req: Request, res: Response): Promise<any> => {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
 
-    // Generate JWT Token
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+    // Generate JWT Token (role is embedded so the auth middleware can gate admin routes)
+    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, role: user.role } });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error during login' });

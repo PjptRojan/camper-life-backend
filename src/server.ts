@@ -1,6 +1,6 @@
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
-import { authRouter } from './auth.js';
+import { authRouter } from './routes/auth.js';
 import { destinationsRouter } from './routes/destinations.js';
 import { gearRouter } from './routes/gear.js';
 import { servicesRouter } from './routes/services.js';
